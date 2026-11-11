@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أداة فحص وإنشاء أكواد الاستجابة السريعة | QR Suite</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- QRCode JS Library for Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- HTML5 QRCode Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        },
+                        accent: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Glassmorphism utility */
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .dark .glass {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Glowing Effects */
+        .glow-brand {
+            box-shadow: 0 0 25px -5px rgba(34, 197, 94, 0.4);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 9999px;
+        }
+
+        /* Video scanner overlay custom styles */
+        #interactive-scanner video {
+            object-fit: cover !important;
+            border-radius: 1rem;
+            width: 100% !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-50 glass border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 py-3">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-accent-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid font-bold fa-qrcode text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-accent-500 dark:from-brand-500 dark:to-accent-500">
+                        QR Master Suite
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">أداة الإنشاء والفحص الفوري</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 space-x-reverse">
+                <!-- Theme Toggle Button -->
+                <button id="themeToggleBtn" onclick="toggleTheme()" class="p-2.5 rounded-xl bg-slate-200/60 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition duration-200">
+                    <i id="themeIcon" class="fa-solid fa-moon text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-5xl w-full mx-auto p-4 md:p-6 my-4 flex-grow">
+
+        <!-- Navigation Tabs -->
+        <div class="flex justify-center mb-8">
+            <div class="glass p-1.5 rounded-2xl flex space-x-2 space-x-reverse shadow-md max-w-md w-full">
+                <button id="tabGenerateBtn" onclick="switchTab('generate')" class="flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center space-x-2 space-x-reverse bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>إنشاء QR</span>
+                </button>
+                <button id="tabScanBtn" onclick="switchTab('scan')" class="flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center space-x-2 space-x-reverse text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
+                    <i class="fa-solid fa-expand"></i>
+                    <span>فحص ومسح QR</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Notification Toast -->
+        <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-4">
+            <div class="glass bg-slate-900/90 text-white dark:bg-slate-100/90 dark:text-slate-900 px-5 py-2.5 rounded-xl shadow-2xl flex items-center space-x-2 space-x-reverse text-sm font-semibold">
+                <i id="toastIcon" class="fa-solid fa-circle-check text-brand-500"></i>
+                <span id="toastMsg">تمت العملية بنجاح</span>
+            </div>
+        </div>
+
+        <!-- Section 1: QR Generator -->
+        <section id="generatorSection" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- Controls Form -->
+            <div class="lg:col-span-7 glass rounded-3xl p-6 shadow-xl border border-slate-200/50 dark:border-slate-800/50 space-y-6">
+                <div class="border-b border-slate-200 dark:border-slate-800 pb-4">
+                    <h2 class="text-lg font-bold flex items-center space-x-2 space-x-reverse">
+                        <i class="fa-solid fa-pen-to-square text-brand-500"></i>
+                        <span>إدخال البيانات والتخصيص</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">أدخل المحتوى وخصص الشكل وفق احتياجك</p>
+                </div>
+
+                <!-- Text/URL Input -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300">الرابط أو النص المراد تحويله</label>
+                    <div class="relative">
+                        <textarea id="qrInput" rows="3" placeholder="أدخل الرابط مثل: https://example.com أو أي نص تريد مشافرته..." class="w-full p-3.5 pl-10 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm transition"></textarea>
+                        <button onclick="clearInput()" title="مسح النص" class="absolute left-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Customizations Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Foreground Color -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">لون النقاط (Foreground)</label>
+                        <div class="flex items-center space-x-2 space-x-reverse bg-slate-50 dark:bg-slate-900/80 p-2 rounded-xl border border-slate-300 dark:border-slate-700">
+                            <input type="color" id="fgColor" value="#000000" onchange="generateQR()" class="w-8 h-8 rounded-lg border-0 cursor-pointer bg-transparent">
+                            <span id="fgColorText" class="text-xs font-mono text-slate-500 uppercase">#000000</span>
+                        </div>
+                    </div>
+
+                    <!-- Background Color -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">لون الخلفية (Background)</label>
+                        <div class="flex items-center space-x-2 space-x-reverse bg-slate-50 dark:bg-slate-900/80 p-2 rounded-xl border border-slate-300 dark:border-slate-700">
+                            <input type="color" id="bgColor" value="#ffffff" onchange="generateQR()" class="w-8 h-8 rounded-lg border-0 cursor-pointer bg-transparent">
+                            <span id="bgColorText" class="text-xs font-mono text-slate-500 uppercase">#ffffff</span>
+                        </div>
+                    </div>
+
+                    <!-- Size Range -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center text-xs font-semibold">
+                            <span>حجم الكود (Size)</span>
+                            <span id="sizeVal" class="text-brand-600 dark:text-brand-400 font-mono">250px</span>
+                        </div>
+                        <input type="range" id="qrSize" min="150" max="400" value="250" step="10" oninput="updateSizeDisplay(); generateQR()" class="w-full accent-brand-500 cursor-pointer">
+                    </div>
+
+                    <!-- Margin Range -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center text-xs font-semibold">
+                            <span>الهامش المحيط (Padding)</span>
+                            <span id="marginVal" class="text-brand-600 dark:text-brand-400 font-mono">2</span>
+                        </div>
+                        <input type="range" id="qrMargin" min="0" max="6" value="2" step="1" oninput="updateMarginDisplay(); generateQR()" class="w-full accent-brand-500 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Quick Presets -->
+                <div class="pt-2">
+                    <label class="block text-xs font-semibold text-slate-500 mb-2">أنماط ألوان جاهزة:</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="setColors('#000000', '#ffffff')" class="px-3 py-1.5 rounded-lg border text-xs font-medium bg-white text-black border-slate-300 hover:scale-105 transition">كلاسيكي</button>
+                        <button onclick="setColors('#1e293b', '#f8fafc')" class="px-3 py-1.5 rounded-lg border text-xs font-medium bg-slate-100 text-slate-800 border-slate-300 hover:scale-105 transition">عصري فاتح</button>
+                        <button onclick="setColors('#22c55e', '#090d16')" class="px-3 py-1.5 rounded-lg border text-xs font-medium bg-slate-900 text-emerald-400 border-emerald-900 hover:scale-105 transition">مصفوفة نيون</button>
+                        <button onclick="setColors('#4f46e5', '#eef2ff')" class="px-3 py-1.5 rounded-lg border text-xs font-medium bg-indigo-50 text-indigo-700 border-indigo-200 hover:scale-105 transition">أزرق ملكي</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview & Actions Container -->
+            <div class="lg:col-span-5 glass rounded-3xl p-6 shadow-xl border border-slate-200/50 dark:border-slate-800/50 flex flex-col items-center justify-center text-center">
+                
+                <h3 class="text-sm font-bold text-slate-500 dark:text-slate-400 mb-4">معاينة الـ QR Code الحية</h3>
+
+                <!-- QR Display Box -->
+                <div id="qrWrapper" class="p-4 rounded-2xl bg-white shadow-inner flex items-center justify-center border border-slate-200 transition-all duration-300 min-h-[220px]">
+                    <div id="qrcode" class="flex justify-center items-center"></div>
+                </div>
+
+                <!-- Download & Share Buttons -->
+                <div class="w-full grid grid-cols-2 gap-3 mt-6">
+                    <button onclick="downloadQR()" class="py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lg shadow-brand-500/20 transition duration-200 flex items-center justify-center space-x-2 space-x-reverse active:scale-95">
+                        <i class="fa-solid fa-download"></i>
+                        <span>تحميل PNG</span>
+                    </button>
+                    
+                    <button onclick="copyQRImage()" class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold text-sm shadow-md transition duration-200 flex items-center justify-center space-x-2 space-x-reverse active:scale-95">
+                        <i class="fa-solid fa-copy"></i>
+                        <span>نسخ الصورة</span>
+                    </button>
+                </div>
+
+                <button onclick="copyTextContent()" class="w-full mt-3 py-2.5 px-4 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800 text-xs font-semibold transition duration-200 flex items-center justify-center space-x-2 space-x-reverse">
+                    <i class="fa-solid fa-font"></i>
+                    <span>نسخ النص المنشأ</span>
+                </button>
+            </div>
+
+        </section>
+
+        <!-- Section 2: QR Scanner -->
+        <section id="scannerSection" class="hidden max-w-2xl mx-auto glass rounded-3xl p-6 shadow-xl border border-slate-200/50 dark:border-slate-800/50 space-y-6">
+            
+            <div class="text-center border-b border-slate-200 dark:border-slate-800 pb-4">
+                <h2 class="text-xl font-bold text-slate-800
